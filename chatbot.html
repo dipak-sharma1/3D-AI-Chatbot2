@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>3D Chatbot</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #141e30, #243b55);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: white;
+    }
+
+    .chatbot {
+      width: 400px;
+      height: 600px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .chat-header {
+      background: rgba(0,0,0,0.3);
+      padding: 16px;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .message {
+      padding: 10px 15px;
+      border-radius: 12px;
+      max-width: 80%;
+      line-height: 1.4;
+    }
+
+    .user {
+      align-self: flex-end;
+      background: #007bff;
+    }
+
+    .bot {
+      align-self: flex-start;
+      background: #2e2e2e;
+    }
+
+    .loading {
+      border: 4px solid #fff;
+      border-top: 4px solid #00c6ff;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      align-self: center;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .chat-input-area {
+      display: flex;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      background: rgba(0,0,0,0.2);
+    }
+
+    input {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      background: transparent;
+      color: white;
+      outline: none;
+      font-size: 16px;
+    }
+
+    button {
+      background: #00c6ff;
+      color: white;
+      border: none;
+      padding: 0 20px;
+      cursor: pointer;
+      font-size: 18px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #009bd4;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="chatbot">
+    <div class="chat-header">🤖 3D AI Chatbot</div>
+    <div class="chat-messages" id="messages"></div>
+    <div class="chat-input-area">
+      <input type="text" id="input" placeholder="Type a message..." />
+      <button onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+
+  <script>
+    const messagesEl = document.getElementById('messages');
+    const inputEl = document.getElementById('input');
+
+    // Add a message to the chat
+    function addMessage(text, sender) {
+      const msg = document.createElement('div');
+      msg.className = `message ${sender}`;
+      msg.innerText = text;
+      messagesEl.appendChild(msg);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    // Show loading spinner
+    function showLoading() {
+      const loader = document.createElement('div');
+      loader.className = 'loading';
+      loader.id = 'loading';
+      messagesEl.appendChild(loader);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    // Remove loading spinner
+    function hideLoading() {
+      const loader = document.getElementById('loading');
+      if (loader) loader.remove();
+    }
+
+    // Send message
+    async function sendMessage() {
+      const text = inputEl.value.trim();
+      if (!text) return;
+
+      addMessage(text, 'user');
+      inputEl.value = '';
+      showLoading();
+
+      const payload = {
+        model: "qwen/qwen2.5-vl-32b-instruct:free",
+        messages: [
+          {
+            role: "user",
+            content: [{ type: "text", text }]
+          }
+        ]
+      };
+
+      try {
+        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer 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",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://yourwebsite.com",
+            "X-Title": "3D Chatbot"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        hideLoading();
+        const reply = data.choices?.[0]?.message?.content || "⚠️ No response received.";
+        addMessage(reply, 'bot');
+      } catch (error) {
+        hideLoading();
+        addMessage("⚠️ Error: " + error.message, 'bot');
+      }    
+    }
+
+    // Send on Enter key
+    inputEl.addEventListener("keydown", e => { 
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
+
+</body>
+</html>
+ 
